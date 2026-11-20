@@ -33,7 +33,30 @@
                 </ul>
             </section>
             <section id="search">
-
+                <h2>Search a medicine</h2>
+                <form id = "search-form" novalidate>
+                    <label for="term"> Medicine name</label>
+                    <input id="term" type="search" placeholder = "Paracetamol" autocomplete="on" required>
+                    <button type="submit">Search</button>
+                </form>
+            <div id="controls" hidden>
+                <label for="section"> Show section</label>
+                <select id="section">
+                    <option value="all">All sections</option>
+                    <option value="warnings">Warnings</option>
+                    <option value="adverse_reactions">Side effects</option>
+                    <option value="drug_interactions"> Interactions</option>
+                    <option value="dosagea_and_admnistration">Dosage</option>
+                    <option value="indications_and_usage">Uses</option>
+                </select>
+                <label for="sort">Sort by</label>
+                <select id="sort">
+                    <option value="brand">Brand name(A-Z)</option>
+                    <option value="maker">Manufacturer(A-Z)</option>
+                </select>
+            </div>
+            <p id="status" role="status" aria-live="polite">Search for a medicine to see its label</p>
+            <div id="results"></div>
              </section>
              <section id="contact">
 
