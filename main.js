@@ -151,3 +151,147 @@ form.addEventListener("submit", (event) => {
 
 sectionSelect.addEventListener("change", render);
 sortSelect.addeventListener("change", render);
+
+// Hospitals from  an API
+
+const overpass_url = "https://overpass-api.de/api/interpreter";
+const hospital_query= `[out:json][timeout:25];
+area["ISO3166-1"="RW"][admin_level=2]->.rw;
+nwr["amenity"="hospital"](area.rw);
+out tags center;`;
+const MAX_SHOWN = 30;
+const hospitalList = document.getELementById("hospital-list");
+const hospitalStatus = document.getElementById("hospital-status");
+const hospitalFilter = document.getElementById("hospital-filter");
+
+function pick(tags, ...keys) {
+    for (const key of keys) {
+        if (tags[key]) return tags[key];
+    }
+    return "";
+}
+function normalizeHospital(item) {
+    const t = item.tages || {};
+    return {
+        name: t.name || "",
+        place: [t["addr:street"], t["addr:district"], t["addr:city"]].filter(Boolean),join(", "),
+        phone: pick (t, "phone", "contact:phone"),
+        email: pick (t, "email", "contact:email"),
+        website: pick (t, "website", "contact:website"),
+        hours: t.opening_hours || "",
+        lat: item.lat ?? (item.center && item.center.lat),
+        lon: item.lon ?? (item.center && item.center.lon),
+    };
+}
+
+async function LoadHospitals() {
+    try {
+        const saved = sessionStorage.getItem("labelens-hospitals");
+        if (saved) {
+            hospitals = JSON.parse(saved);
+            renderHospitals();
+            return;
+        }
+    } catch (error) {
+
+    }
+
+    try {
+        const response = await fetch (overpass_url, {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded" },
+            body: "data=" + encodeURIComponent(HOSPITAL_QUERY),
+        });
+        if (response.status === 429 || response.status === 504) throw new Error("busy");
+        if (!response.ok) throw new Error("http-" + response.status);
+
+        const data = await response.json();
+        hospitals = data.elements
+        .map(normalizeHospital)
+        .filter((h) => h.name)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+        try {
+        sessionStorage.setItem("labelens-hospitals", JSON.stringify(hospitals));
+        } catch (error) {
+        // Not saving is fine.
+        }
+        renderHospitals();
+    } catch (error) {
+        if (error.message === "busy") {
+        hospitalStatus.textContent = "The hospital service is busy. Refresh the page in a minute.";
+        } else if (error instanceof TypeError) {
+        hospitalStatus.textContent = "Could not load hospitals. Check your internet connection.";
+        } else {
+        hospitalStatus.textContent = "The hospital service returned an error. Try again later.";
+        }
+    }
+    }
+
+    function renderHospitals() {
+    const query = hospitalFilter.value.trim().toLowerCase();
+    const matches = hospitals.filter((h) =>
+        (h.name + " " + h.place).toLowerCase().includes(query)
+    );
+
+    hospitalList.replaceChildren();
+
+    if (hospitals.length === 0) {
+        hospitalStatus.textContent = "No hospitals found.";
+        return;
+    }
+    if (matches.length === 0) {
+        hospitalStatus.textContent = "No hospitals match your search.";
+        return;
+    }
+
+    const shown = matches.slice(0, MAX_SHOWN);
+    hospitalStatus.textContent = matches.length > MAX_SHOWN
+        ? `Showing the first ${MAX_SHOWN} of ${matches.length} hospitals. Type a name or place to narrow the list.`
+        : `Showing ${matches.length} of ${hospitals.length} hospitals.`;
+
+    for (const hospital of shown) hospitalList.appendChild(buildHospital(hospital));
+    }
+
+    function buildHospital(h) {
+    const card = el("article", "hospital");
+    card.appendChild(el("h3", "", h.name));
+    card.appendChild(el("p", "", h.place || "Address not listed"));
+    card.appendChild(el("p", "", "Phone: " + (h.phone || "Not listed")));
+
+    // Email: only make a link if it looks like a single valid address.
+    const emailLine = el("p", "", "Email: ");
+    if (/^[^\s@;,]+@[^\s@;,]+$/.test(h.email)) {
+        const mail = el("a", "", h.email);
+        mail.href = "mailto:" + h.email;
+        emailLine.appendChild(mail);
+    } else {
+        emailLine.append("Not listed");
+    }
+    card.appendChild(emailLine);
+
+    card.appendChild(el("p", "", "Open: " + (h.hours || "Not listed")));
+
+    // Website: only allow http(s) links.
+    if (/^https?:\/\//i.test(h.website)) {
+        const siteLine = el("p");
+        const site = el("a", "", "Hospital website");
+        site.href = h.website;
+        siteLine.appendChild(site);
+        card.appendChild(siteLine);
+    }
+
+    if (h.lat !== undefined && h.lon !== undefined) {
+        const mapLine = el("p");
+        const map = el("a", "", "View on map");
+        map.href = `https://www.openstreetmap.org/?mlat=${h.lat}&mlon=${h.lon}#map=17/${h.lat}/${h.lon}`;
+        mapLine.appendChild(map);
+        card.appendChild(mapLine);
+    }
+    return card;
+    }
+
+    hospitalFilter.addEventListener("input", renderHospitals);
+    loadHospitals();
+        }
+}
