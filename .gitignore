@@ -1,0 +1,9 @@
+# Secrets (never commit API keys)
+.env
+config.local.js
+
+# System and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+node_modules/
