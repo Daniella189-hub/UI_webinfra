@@ -1,7 +1,8 @@
 function el(tag, className, text) {
     const node = document.createElement(tag);
-    if(classNmae) node.classsName = className;
-    if(text !== undefined) node.tetxContent = text;
+    if(classNmae) node.className = className;
+    if(text !== undefined) node.textContent = text;
+    return node;
 }
 
 const PAGES = ["search", "about", "contact"];
@@ -49,7 +50,7 @@ document.getElementById("get-started").addEventListener("click", (event) => {
 // DRUG LABEL SEARCH
 
 
-const URL = "https://api.fda.gov/drug/label.json";
+const API_URL = "https://api.fda.gov/drug/label.json";
 const preview_length = 350;
 const SECTIONS={
     warnings: "Warnings",
@@ -62,7 +63,7 @@ const SECTIONS={
 
 const form =document.getElementById("search-form");
 const termInput = document.getElementById("term");
-const controls = document.getElelmentById("controls");
+const controls = document.getElementById("controls");
 const sectionSelect = document.getElementById("section");
 const sortSelect = document.getElementById("sort");
 const statusEl = document.getElementById("status");
@@ -102,7 +103,7 @@ async function searchDrugs(term){
     
     const safe = encodeURIComponent(term);
     const query = `openfda.generic_name:%22${safe}%22+openfda.brand_name:%22${safe}%22`;
-    const url = `${URL}?search=${query}&limit=25`;
+    const url = `${API_URL}?search=${query}&limit=25`;
 
     try {
         const response = await fetch(url);
@@ -111,11 +112,11 @@ async function searchDrugs(term){
             setStatus(`No labels found for ${term}". Try the genric nam, such as paracetamol.`);
             return;
         }
-        if (response.status === 429) throw new Error("rate_limit");
+        if (response.status === 429) throw new Error("rate-limit");
         if(!response.ok) throw new Error("http-" + response.status);
 
         const data = await response.json();
-        if(!data.resuslts || data.results.length === 0 ){
+        if(!data.results || data.results.length === 0 ){
             drugs = [];
             setStatus(`No labels found for "${term}".`);
             return;
@@ -211,7 +212,7 @@ form.addEventListener("submit", (event) => {
 });
 
 sectionSelect.addEventListener("change", render);
-sortSelect.addeventListener("change", render);
+sortSelect.addEventListener("change", render);
 
 // Hospitals from  an API
 
@@ -221,7 +222,7 @@ area["ISO3166-1"="RW"][admin_level=2]->.rw;
 nwr["amenity"="hospital"](area.rw);
 out tags center;`;
 const MAX_SHOWN = 30;
-const hospitalList = document.getELementById("hospital-list");
+const hospitalList = document.getElementById("hospital-list");
 const hospitalStatus = document.getElementById("hospital-status");
 const hospitalFilter = document.getElementById("hospital-filter");
 
@@ -232,7 +233,7 @@ function pick(tags, ...keys) {
     return "";
 }
 function normalizeHospital(item) {
-    const t = item.tages || {};
+    const t = item.tags || {};
     return {
         name: t.name || "",
         place: [t["addr:street"], t["addr:district"], t["addr:city"]].filter(Boolean).join(", "),
@@ -245,7 +246,7 @@ function normalizeHospital(item) {
     };
 }
 
-async function LoadHospitals() {
+async function loadHospitals() {
     try {
         const saved = sessionStorage.getItem("labelens-hospitals");
         if (saved) {
@@ -353,7 +354,6 @@ async function LoadHospitals() {
     }
 
     hospitalFilter.addEventListener("input", renderHospitals);
-    loadHospitals();
-
+    showPage();
      
 

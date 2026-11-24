@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="view port" content="width=device-width, initial-scale=1">
+        <title> Log in:Labelens</title>
+        <link rel="stylesheet" href="style.css">
+
+    </head>
+    <body>
+        <header class="site-header">
+            <nav arial-label="Main" class="read">
+                <ul>
+                    <li><a href="index.html#about">About</a></li>
+                </ul>
+            </nav>
+        </header>
+        <main id="main" tabindex="-1">
+            <section class="login-card">
+                <h1 id="form-title">Log in to Labelens</h1>
+                <p id="form-intro">Enter your details to start reading medicine labels</p>
+
+                <form id="login-form" novalidate>
+                    <label for="email">Email</label>
+                    <input id="email" type="email" autocomplete="username" palceholder="your email" required>
+
+                    <label for="password">Password</label>
+                    <input id="password" type="password" autocomplete="current-password" required>
+                    <label class="show-pass" for="show-password">
+                        <input id="show-password" type="checkbox">Show Password
+                    </label>
+                    <p id="login-error" role="alert" aria-love="assertive"></p>
+                    <p id="login-message" role="status" aria-live="polite"></p>
+                    <button type="submit" id="submit-btn">Log in</button>
+                </form>
+                <p class="switch">
+                    <span id="switch-text">New here=</span>
+                    <button type="button" class="more" id="switch-mode">Create an account</button>
+                </p>
+                <p class="switch"><button type="button" class="more" id="forgot">Forgot your Password</button></p>
+            </section>
+        </main>
+        <footer class="site-footer">
+            <p>Information only, not medical advice</p>
+        </footer>
+        <script type="module" src="login.js"></script>
+    </body>
+</html>
