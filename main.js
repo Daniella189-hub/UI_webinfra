@@ -39,18 +39,11 @@ function showPage() {
 
 window.addEventListener("hashchange", showPage);
 
-// "Get started" jumps straight into the search box.
-document.getElementById("get-started").addEventListener("click", (event) => {
-  event.preventDefault();
-  if (location.hash !== "#search") location.hash = "#search";
-  document.getElementById("term").focus();
-  document.getElementById("search").scrollIntoView();
-});
-
 // DRUG LABEL SEARCH
 
 
 const API_URL = "https://api.fda.gov/drug/label.json";
+const API_KEY = window.LABELENS_API_KEY || "";
 const preview_length = 350;
 const SECTIONS={
     warnings: "Warnings",
@@ -68,6 +61,7 @@ const sectionSelect = document.getElementById("section");
 const sortSelect = document.getElementById("sort");
 const statusEl = document.getElementById("status");
 const resultsEl = document.getElementById("results");
+const apiNote = document.getElementById("api-note");
 
 let drugs = [];
 let lastTerm = "";
@@ -103,16 +97,19 @@ async function searchDrugs(term){
     
     const safe = encodeURIComponent(term);
     const query = `openfda.generic_name:%22${safe}%22+openfda.brand_name:%22${safe}%22`;
+    const keyPart = API_KEY ? `&api_key=${encodeURIComponent(API_KEY)}` : "";
     const url = `${API_URL}?search=${query}&limit=25`;
+    const publicUrl = `${API_URL}?search=${query}&limit=25`;
 
     try {
         const response = await fetch(url);
         if (response.status === 404){
             drugs = [];
-            setStatus(`No labels found for ${term}". Try the genric nam, such as paracetamol.`);
+            setStatus(`No labels found for ${term}". Try the generic name, such as ibuprofen.`);
             return;
         }
         if (response.status === 429) throw new Error("rate-limit");
+        if (response.status === 401 || response.status === 403) throw new Error ("auth-" + response.status);
         if(!response.ok) throw new Error("http-" + response.status);
 
         const data = await response.json();
@@ -125,17 +122,41 @@ async function searchDrugs(term){
         lastTerm = term;
         controls.hidden = false;
         render()
+        showApiNote(data, publicUrl);
     } catch (error){
         drugs = [];
         if(error.message === "rate-limit"){
             setStatus("Too many searches in a short time. Wait a minute, then search again.", true);
-        } else if (error instanceof TypeError){
-            setStatus("Coud not reach the open FDA service. check your internet connection an dtry again.", true);
+
+        } else if (error.message.startsWith("auth-")) {
+            setStatus(`openFDA refused the request (error ${error.message.slice(5)}). It may need a free API key: add it in config.local.js`, true);
+
+        } else if (error.message.startsWith("http-")) {
+            setStatus(`openFDA service returned an error (code ${error.message.slice(5)}). Try again in a moment.`, true);
+
+        }else if (error instanceof TypeError){
+            setStatus("Coud not reach the open FDA service. check your internet connection and try again.", true);
         } else {
             setStatus("The openFDA service returned an error. try again in a moment.", true);
         }
     }
 
+}
+
+function showApiNote(data, publicUrl) {
+    const total = data.meta && data.meta.results && data.meta.results.total;
+    const shown = data.results.length;
+    const text = total && total > shown
+        ? `Live from openFDA: ${shown} of ${total} matching labels loaded. `
+        : `Live from openFDA: ${shown} matching labels loaded. `;
+    apiNote.append(text);
+    if (!API_KEY) {
+        const link = el("a", "", "View the raw API response");
+        link.href = publicUrl;
+        link.target = "_blank";
+        link.rel = "noopener";
+        apiNote.appendChild(link);
+    }
 }
 
 //drawing the cards
@@ -215,8 +236,6 @@ sectionSelect.addEventListener("change", render);
 sortSelect.addEventListener("change", render);
 
 // Hospitals from  an API
-
-const overpass_url = "https://overpass-api.de/api/interpreter";
 const hospital_query= `[out:json][timeout:25];
 area["ISO3166-1"="RW"][admin_level=2]->.rw;
 nwr["amenity"="hospital"](area.rw);
@@ -225,6 +244,7 @@ const MAX_SHOWN = 30;
 const hospitalList = document.getElementById("hospital-list");
 const hospitalStatus = document.getElementById("hospital-status");
 const hospitalFilter = document.getElementById("hospital-filter");
+let hospitals = [];
 
 function pick(tags, ...keys) {
     for (const key of keys) {
@@ -246,7 +266,53 @@ function normalizeHospital(item) {
     };
 }
 
-async function loadHospitals() {
+const overpass_attempts = [
+    { url: "https://overpass-api.de/api/interpreter", method: "GET"},
+    { url: "https://overpass-api.de/api/api/interpreter", method:"POST"},
+    { url: "https://overpass.private.coffee/api/interpreter", method:"POST"},
+    { url: "https://overpass.kumi.systems/api/interpreter", method:"POST"},
+    { url: "https://maps.mail.ru/osm/tools/overpass/api/interpreter", method:"POST"}
+]
+async function requestOverpass(attempt) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try{
+        let response;
+        if (attempt.method ==="GET") {
+            response = await fetch(attempt.url + "?data=" + encodeURIComponent(hospital_query), {
+                signal: controller.signal,
+            });
+        } else {
+            response = await fetch(attempt.url, {
+                method: "POST",
+                headers: {"Content-Type": "application/x-www-form-urlencoded"},
+                body: "data=" + encodeURIComponent(hospital_query),
+                signal: controller.signal,
+            });
+        }
+        if (!response.ok) throw new Error ("http-" + response.status);
+        const data = await response.json();
+        if(!data || !Array.isArray(data.elements)) throw new Error("bad-data");
+        return data;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function fetchHospitalData() {
+    let lastError = null;
+    for (const attempt of overpass_attempts) {
+        try {
+            return await requestOverpass(attempt);
+        } catch (error) {
+            lastError = error;
+            console.warn("Hospital server failed:", attempt.url, attempt.method, error.message);
+        }
+    }
+    throw lastError;
+}
+
+async function loadHospitals(){
     try {
         const saved = sessionStorage.getItem("labelens-hospitals");
         if (saved) {
@@ -254,32 +320,25 @@ async function loadHospitals() {
             renderHospitals();
             return;
         }
-    } catch (error) {
+    } catch(error) {
 
     }
 
     try {
-        const response = await fetch (overpass_url, {
-            method: "POST",
-            headers: {"Content-Type": "application/x-www-form-urlencoded" },
-            body: "data=" + encodeURIComponent(HOSPITAL_QUERY),
-        });
-        if (response.status === 429 || response.status === 504) throw new Error("busy");
-        if (!response.ok) throw new Error("http-" + response.status);
-
-        const data = await response.json();
+        const data = await fetchHospitalData();
         hospitals = data.elements
-        .map(normalizeHospital)
-        .filter((h) => h.name)
-        .sort((a, b) => a.name.localeCompare(b.name));
-
+            .map(normalizeHospital)
+            .filter((h) => h.name)
+            .sort((a, b) => a.name.localeCompare(b.name));
         try {
-        sessionStorage.setItem("labelens-hospitals", JSON.stringify(hospitals));
-        } catch (error) {
-        // Not saving is fine.
-        }
-        renderHospitals();
+            sessionStorage.setItem("labelens-hospitals", JSON.stringify(hospitals));
+        } catch (error){
+
+        }   
+        renderHospitals(); 
     } catch (error) {
+        hospitalsRequested = false;
+        console.error(error);
         if (error.message === "busy") {
         hospitalStatus.textContent = "The hospital service is busy. Refresh the page in a minute.";
         } else if (error instanceof TypeError) {
@@ -303,7 +362,7 @@ async function loadHospitals() {
         return;
     }
     if (matches.length === 0) {
-        hospitalStatus.textContent = "No hospitals match your search.";
+        hospitalStatus.textContent = "No hospitals match the search.";
         return;
     }
 

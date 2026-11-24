@@ -11,13 +11,13 @@
         <header class ="site-header">
             <nav aria-label="Main" class="read">
                 <ul>
-                    <li><a href="#contact">contact</a></li>
-                    <li><a href="#search">search</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                    <li><a href="#search">Search</a></li>
                     <li><a href="#about">About</a></li>
                 </ul>
             </nav>
         </header>
-        <div class="hero">
+        <div class="hero" id="hero">
             <h1 align="center">Welcome to Labelens</h1>
             <h3 align="center">A drug label manager</h3>
             <h3 align="center"><a href = "login.html" class="ready">Get started</a></h3>
@@ -27,11 +27,11 @@
             <section id="about">
                 <h2>About</h2>
                 <h3>The problems</h3>
-                <p>Medicine labels are long, technical and printed in tiny text. Many people never read them, so they miss warnings, side effects and interaction that matter.</p>
+                <p>Medicine labels are long, technical and printed in tiny text. Many people never read them, so they miss warnings, side effects and interactions that matter.</p>
                 <br> 
 
                 <h3>What Labelens does</h3>
-                <p>Labelens finds the official label fro a medicine and splits it into short sections (warnings, side effects, interactions,dasage and uses), so you can find what you need quickly.</p>
+                <p>Labelens finds the official label for a medicine and splits it into short sections (warnings, side effects, interactions,dosage and uses), so you can find what you need quickly.</p>
 
                 <h3>How to use it</h3>
                 <ol>
@@ -41,9 +41,10 @@
                 </ol>
                 
                 <h3> Where the data comes from</h3>
-                <p>Labels come from the <a href="">openFDA Drug Label API</a>. These are United States labels, so some brand names used in Rwanda may not appear, and label may differ from the product you hold.</p>
+                <p>Labels come from the <a href="https://open.fda.gov/apis/drug/label/">openFDA Drug Label API</a>. These are United States labels, so some brand names used in Rwanda may not appear, and label may differ from the product you hold.</p>
+                <p>Hospitals details come from<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a></p>
 
-                <h3>Please note</h3>
+                <h3><strong>Please note</strong></h3>
                 <p><b>Labelens gives information only. It is not medical advice.</b> label data can be out of dat. Always ask a doctor or pharmacist befor etaking, stopping  or combining medicines.</p>
 
                 <h3>Privacy</h3>
@@ -51,27 +52,28 @@
 
                 <h3>Frequently asked questions</h3>
                 <details>
-                    <summary>Can I use Labelens instead of asking a doctor?</summary>
+                    <summary style="color:red">Can I use Labelens instead of asking a doctor?</summary>
                     <p>Try the generic name instead of the brand name. The labels come from the US, so some local brands  are missing.</p>
                 </details>
                 <details> 
-                    <summary>Why can't I find my medicine?</summary>
+                    <summary style="color:red">Why can't I find my medicine?</summary>
                     <p>NO. Labelens helps you read the official label. It cannot tell you what is right for your health.</p>
 
                 </details>
                 <details>
-                    <summary>Why does a section say "Not listed"?</summary>
+                    <summary style="color:red">Why does a section say "Not listed"?</summary>
                     <p>Some labels do not include every section. This is a gap in the label data, not an error in the app.</p>
                 </details>
 
                 <h3>Who built Labelens</h3>
-                <p>Simple student from ALU. For this summative </p>
+                <p>A Simple student from ALU. For her summative </p>
                 <ul>
-                    <li>This app is mainly for drug labellinng interpretation</li>
-                    <li>This is not the final note, you are highly advised to contact a professional for further informations</li>
-                    <li>get started <a href="login.html">here</a></li>
+                    <li>This app is mainly for drug labelling interpretation</li>
+                    <li>This is not the final note, please go and consult a professional for further informations</li>
+                    <li>Get started <a href="login.html">here</a>. Join the Labelens community</li>
                 </ul>
             </section>
+            <br>
             <section id="search">
                 <h2>Search a medicine</h2>
                 <form id = "search-form" novalidate>
@@ -79,6 +81,8 @@
                     <input id="term" type="search" placeholder = "Paracetamol" autocomplete="on" required>
                     <button type="submit">Search</button>
                 </form>
+            <br>
+            <br>
             <div id="controls" hidden>
                 <label for="section"> Show section</label>
                 <select id="section">
@@ -96,6 +100,7 @@
                 </select>
             </div>
             <p id="status" role="status" aria-live="polite">Search for a medicine to see its label</p>
+            <p id="api-note" class="note"></p>
             <div id="results"></div>
              </section>
              <section id="contact">
@@ -103,13 +108,13 @@
                 <p>These hospitals in  Rwanda are accessible for more medical advice.</p>
                 <p><strong>In a emerrgency, call your local emergency number or go to the nearest hospital or pharmacy</strong></p>
 
-                <label for="hospital-filter">Filter hospitals by namem or place</label>
+                <label for="hospital-filter">Filter hospitals by name or place</label>
                 <input id="hospital-filter" type="search" placeholder="e.g. Kigali" autocomplete="off">
 
                 <p id="hospital-status" role="status" aria-live="polite">Loading hospitals...</p>
                 <div id="hospital-list"></div>
                 <p>Hospital data © <a href="https://www.openstreetmap.org/copyright"> OpenStreetMap contributors</a>.</p>
-                <h3>QUestions about this website</h3>
+                <h3>Questions about this website</h3>
                 <p>Email: <a href="mailto:daniella@alustudent.com">daniella@alustudent.com</a> </p>
                 
              </section>
