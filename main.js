@@ -65,6 +65,18 @@ const apiNote = document.getElementById("api-note");
 
 let drugs = [];
 let lastTerm = "";
+let aliasNote="";
+
+//The Us label database uses different names for some medicines.
+const NAME_ALIASES = {
+  paracetamol: "acetaminophen",
+  adrenaline: "epinephrine",
+  noradrenaline: "norepinephrine",
+  salbutamol: "albuterol",
+  frusemide: "furosemide",
+  lignocaine: "lidocaine",
+  glibenclamide: "glyburide",
+};
 
 function setStatus(message, isError = false) {
     statusEl.textContent = message;
@@ -95,7 +107,7 @@ async function searchDrugs(term){
     resultsEl.replaceChildren();
     apiNote.replaceChildren();
     controls.hidden = true;
-    
+    const searchTerm = NAME_ALIASES[term.toLowerCase()] || term;
     const safe = encodeURIComponent(term);
     const query = `openfda.generic_name:%22${safe}%22+openfda.brand_name:%22${safe}%22`;
     const keyPart = API_KEY ? `&api_key=${encodeURIComponent(API_KEY)}` : "";
@@ -124,12 +136,16 @@ async function searchDrugs(term){
         }
         drugs = data.results.map(normalize);
         lastTerm = term;
+        aliasNote = searchTerm !== term ? ` (listed in the US as "${searchTerm}")` : "";
         controls.hidden = false;
         render()
         showApiNote(data, publicUrl);
     } catch (error){
-        console.error("Medidicine search failed:", error);
+    
         drugs = [];
+        console.error(error) {
+            setStatus("Sorry, we couldn't load the results right now. check internet Connection and try again", true);
+        }
         if(error.message === "rate-limit"){
             setStatus("Too many searches in a short time. Wait a minute, then search again.", true);
 
@@ -184,7 +200,7 @@ function render(){
     }
     
     const noun = list.length === 1 ? "label" : "labels";
-    setStatus(`Showing ${list.length} ${noun} for "${lastTerm}".`);
+    setStatus(`Showing ${list.length} ${noun} for "${lastTerm}" ${aliasNote}.`);
     for (const drug of list) resultsEl.appendChild(buildCard(drug, chosen));
 }
 
@@ -276,14 +292,13 @@ function normalizeHospital(item) {
 
 const overpass_attempts = [
     { url: "https://overpass-api.de/api/interpreter", method: "GET"},
-    { url: "https://overpass-api.de/api/interpreter", method:"POST"},
     { url: "https://overpass.private.coffee/api/interpreter", method:"POST"},
     { url: "https://overpass.kumi.systems/api/interpreter", method:"POST"},
-    { url: "https://maps.mail.ru/osm/tools/overpass/api/interpreter", method:"POST"}
 ]
-async function requestOverpass(attempt) {
+async function requestOverpass(attempt, stopSignal) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 12000);
+    stopSignal.addEventListener("abort", () => controller.abort());
     try{
         let response;
         if (attempt.method ==="GET") {
@@ -311,16 +326,21 @@ async function requestOverpass(attempt) {
 }
 
 async function fetchHospitalData() {
-    let lastError = null;
-    for (const attempt of overpass_attempts) {
-        try {
-            return await requestOverpass(attempt);
-        } catch (error) {
-            lastError = error;
-            console.warn("Hospital server failed:", attempt.url, attempt.method, error.message);
-        }
+    const stopAll = new AbortController();
+    try {
+        return await Promise.any(
+            overpass_attempts.map((attempt) =>
+                requestOverpass(attempt, stopAll.signal).catch((error) => {
+                    if (!stopAll.signal.aborted) {
+                        console.warn("Hospital server failed:", attempt.url, attempt.method, error.message); // console only
+                    }
+                    throw error;
+                })
+            )
+         );
+    } finally {
+        stopAll.abort(); // cancel the slower requests once one has answered
     }
-    throw lastError;
 }
 
 async function loadHospitals(){
