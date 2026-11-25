@@ -24,16 +24,13 @@ Medicine labels are long and printed in tiny text Many people never read them, s
 - **Error handling:** friendly messages for no results, rate limits, API downtime and no internet
 - **Responsive** dark interface
 
-## Pages
+## Technologies used
 
-| Page | What it does |
-|---|---|
-| Home / Search (`index.html`) | Hero banner and the medicine search |
-| About | Explains the app, the data sources and the FAQ |
-| Contact | Hospitals in Rwanda from OpenStreetMap, with a filter |
-| Login (`login.html`) | Create an account, log in or reset a password |
-
-The Search, About and Contact views are inside one page. The links switch the view and update the address (`#search`, `#about`, `#contact`).
+- HTML, CSS, JavaScript
+- [Node.js/Express, Python/Flask, Django, etc.]
+- [Database, if used]
+- [Nginx, Apache, Docker, etc.]
+- [Testing tools, if used]
 
 ## Project structure
 
@@ -49,7 +46,10 @@ UI_webinfra/
 ├── .gitignore
 └── README.md
 ```
-
+## Cloning the repository
+```bash
+git clone https://github.com/Daniella189-hub/UI_webinfra.git
+```
 ---
 
 ## APIs and services used
@@ -68,28 +68,8 @@ UI_webinfra/
 - Login: **Firebase Authentication**, Google
 - Web server: **Nginx**. Load balancer: **HAProxy**. Certificates: **Let's Encrypt** (Certbot)
 
+
 ---
-
-## Run it locally
-
-You need Python 3 (for a small local web server) and a browser. The login page uses JavaScript modules, which only load through a server, so don't open the files by double-clicking.
-
-```bash
-git clone https://github.com/Daniella189-hub/UI_webinfra.git
-cd UI_webinfra
-
-# Create the settings file for login
-cp firebase-config.example.js firebase-config.js
-# Open firebase-config.js and replace each PASTE_... value with the
-# values given in the submission comment.
-
-python3 -m http.server 8000
-```
-
-Open http://localhost:8000 in your browser.
-
-- Search works without any key.
-- To use the login page, `firebase-config.js` must contain the Firebase settings from the submission comment, and the test account details are in the same comment.
 
 ### Why `firebase-config.js` is not in the repository
 The assignment says not to expose keys in the public repo, so the real file is listed in `.gitignore`. The repo includes `firebase-config.example.js` showing the format. Firebase web settings identify the project and are not passwords, but they are kept out of the repo as a precaution.
@@ -124,31 +104,16 @@ Install Nginx and put the project files in the web folder:
 
 ```bash
 sudo apt update && sudo apt install -y nginx
-# copy the project files to the server (from your own computer)
-scp -i <key> index.html main.js login.html login.js style.css firebase-config.js ubuntu@<WEB_IP>:/tmp/
-# on the server
-sudo cp /tmp/index.html /tmp/main.js /tmp/login.html /tmp/login.js /tmp/style.css /tmp/firebase-config.js /var/www/html/
-sudo chmod 644 /var/www/html/*
+#  cloning the repo in each of the web servers. So I can easy pull any cahnges
+git clone https://github.com/Daniella189-hub/UI_webinfra.git
+# moving the folder UI_webinfra in /var/www/html/* so it can server anything in this server
 ```
+<img width="560" height="72" alt="image" src="https://github.com/user-attachments/assets/81015c15-7e12-4f09-b9a3-7a7b430ecd84" />
 
 Nginx site (`/etc/nginx/sites-available/default`). The `X-Served-By` header shows which server answered, and it is set to `7338-web-02` on the second server:
 
-```nginx
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    server_name _;
-    root /var/www/html;
-    index index.html;
+<img width="532" height="51" alt="image" src="https://github.com/user-attachments/assets/3949930d-2ef1-4188-a3b4-e21cf1f225b0" />
 
-    include snippets/labelens-speed.conf;
-    add_header X-Served-By 7338-web-01 always;
-
-    location / {
-        try_files $uri $uri/ =404;
-    }
-}
-```
 
 Speed settings (`/etc/nginx/snippets/labelens-speed.conf`), described under Optimizations below:
 
@@ -174,12 +139,11 @@ sudo service nginx restart
 
 ### 2.Load balancer  (Lb01)
 A let's  Encrypt certificte was issued for `www.nishimwe.tech`, and the domain's DNS **A record** points to Lb01. HAproxy needs the certificate and key combined in one file (`/etc/haproxy/certs/www.nishimwe.tech.pem).
+<img width="934" height="403" alt="image" src="https://github.com/user-attachments/assets/ef95a96d-7bc9-494b-bc3f-2d32a6cf68d9" />
 
-
-INSERT HAPROXY CONFIG FILE HERE
 
 ```bash
-sudo haproxy -c -f /etc/haproxy/haproxy.cfg    # check the config
+sudo haproxy -c -f /etc/haproxy/haproxy.cfg
 sudo service haproxy restart
 ```
 
@@ -192,9 +156,10 @@ curl -I http://www.nishimwe.tech/
 
 **2.Traffic alternates between both servers.** Six requests through the load balancer were answered by the two servers  in turn, all with status 200:
 
-INSERT PICTURE OF TRAFFIC
+<img width="894" height="204" alt="Screenshot 2026-11-25 115043" src="https://github.com/user-attachments/assets/82e3d86e-ab37-4247-9ba1-5b34dac96311" />
 
-**3. Direct access to a web server is a blocked** (firewall allows port 80 only from the load balancer):
+
+**3. Direct access to a web server is blocked** (firewall allows port 80 only from the load balancer):
 
 ```bash
 curl -m 5 -I http://35.176.158.204/
