@@ -221,7 +221,7 @@ backend web_servers
 
 ```bash
 sudo haproxy -c -f /etc/haproxy/haproxy.cfg    # check the config
-sudo systemctl reload haproxy
+sudo service haproxy restart
 ```
 
 - **`http_front`** sends every plain HTTP request to HTTPS with a `301` redirect.
