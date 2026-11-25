@@ -23,7 +23,7 @@ const forgotBtn = document.getElementById("forgot");
 const APP_PAGE = "index.html#search";
 let mode = "login";
 let auth = null;
-function gotToApp(){
+function goToApp(){
     window.location.href = APP_PAGE;
 
 }
@@ -132,12 +132,12 @@ form.addEventListener("submit", async (event) => {
 async function setup(){
     try{
         const {firebaseConfig} = await import("./firebase-config.js");
-        if (!firebasConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("PASTE")) {
+        if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("PASTE")) {
             throw new Error("not-configured");
         }
         auth =getAuth(initializeApp(firebaseConfig));
         onAuthStateChanged(auth, (user) => {
-            if (user) gotToApp();
+            if (user) goToApp();
 
         });
 
