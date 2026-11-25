@@ -143,9 +143,7 @@ async function searchDrugs(term){
     } catch (error){
     
         drugs = [];
-        console.error(error) {
-            setStatus("Sorry, we couldn't load the results right now. check internet Connection and try again", true);
-        }
+        console.error(error);
         if(error.message === "rate-limit"){
             setStatus("Too many searches in a short time. Wait a minute, then search again.", true);
 
