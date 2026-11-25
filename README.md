@@ -70,27 +70,6 @@ UI_webinfra/
 
 ---
 
-## Run it locally
-
-You need Python 3 (for a small local web server) and a browser. The login page uses JavaScript modules, which only load through a server, so don't open the files by double-clicking.
-
-```bash
-git clone https://github.com/Daniella189-hub/UI_webinfra.git
-cd UI_webinfra
-
-# Create the settings file for login
-cp firebase-config.example.js firebase-config.js
-# Open firebase-config.js and replace each PASTE_... value with the
-# values given in the submission comment.
-
-python3 -m http.server 8000
-```
-
-Open http://localhost:8000 in your browser.
-
-- Search works without any key.
-- To use the login page, `firebase-config.js` must contain the Firebase settings from the submission comment, and the test account details are in the same comment.
-
 ### Why `firebase-config.js` is not in the repository
 The assignment says not to expose keys in the public repo, so the real file is listed in `.gitignore`. The repo includes `firebase-config.example.js` showing the format. Firebase web settings identify the project and are not passwords, but they are kept out of the repo as a precaution.
 
@@ -138,7 +117,7 @@ server {
     listen 80 default_server;
     listen [::]:80 default_server;
     server_name _;
-    root /var/www/html;
+    root /var/www/html/UI_webinfra;
     index index.html;
 
     include snippets/labelens-speed.conf;
@@ -174,12 +153,23 @@ sudo service nginx restart
 
 ### 2.Load balancer  (Lb01)
 A let's  Encrypt certificte was issued for `www.nishimwe.tech`, and the domain's DNS **A record** points to Lb01. HAproxy needs the certificate and key combined in one file (`/etc/haproxy/certs/www.nishimwe.tech.pem).
+frontend http_front
+    bind *:80
+    http-request redirect scheme https code 301 unless { ssl_fc }
 
+frontend https_front
+    bind *:443 ssl crt /etc/haproxy/certs/www.nishimwe.tech.pem
+    http-request set-header X-Forwarded-Proto https
+    default_backend web_servers
 
-INSERT HAPROXY CONFIG FILE HERE
+backend web_servers
+    balance roundrobin
+    server web-01 35.178.184.225:80 check
+    server web-02 35.176.158.204:80 check
+
 
 ```bash
-sudo haproxy -c -f /etc/haproxy/haproxy.cfg    # check the config
+sudo haproxy -c -f /etc/haproxy/haproxy.cfg
 sudo service haproxy restart
 ```
 
@@ -192,9 +182,10 @@ curl -I http://www.nishimwe.tech/
 
 **2.Traffic alternates between both servers.** Six requests through the load balancer were answered by the two servers  in turn, all with status 200:
 
-INSERT PICTURE OF TRAFFIC
+<img width="894" height="204" alt="Screenshot 2026-11-25 115043" src="https://github.com/user-attachments/assets/82e3d86e-ab37-4247-9ba1-5b34dac96311" />
 
-**3. Direct access to a web server is a blocked** (firewall allows port 80 only from the load balancer):
+
+**3. Direct access to a web server is blocked** (firewall allows port 80 only from the load balancer):
 
 ```bash
 curl -m 5 -I http://35.176.158.204/
