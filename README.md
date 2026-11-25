@@ -107,9 +107,8 @@ sudo apt update && sudo apt install -y nginx
 #  cloning the repo in each of the web servers. So I can easy pull any cahnges
 git clone https://github.com/Daniella189-hub/UI_webinfra.git
 # moving the folder UI_webinfra in /var/www/html/* so it can server anything in this server
-<img width="560" height="72" alt="image" src="https://github.com/user-attachments/assets/81015c15-7e12-4f09-b9a3-7a7b430ecd84" />
-
 ```
+<img width="560" height="72" alt="image" src="https://github.com/user-attachments/assets/81015c15-7e12-4f09-b9a3-7a7b430ecd84" />
 
 Nginx site (`/etc/nginx/sites-available/default`). The `X-Served-By` header shows which server answered, and it is set to `7338-web-02` on the second server:
 
