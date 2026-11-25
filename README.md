@@ -68,13 +68,7 @@ git clone https://github.com/Daniella189-hub/UI_webinfra.git
 - Login: **Firebase Authentication**, Google
 - Web server: **Nginx**. Load balancer: **HAProxy**. Certificates: **Let's Encrypt** (Certbot)
 
-### Install dependencies
 
-For a Node.js project:
-
-```bash
-npm install
-```
 ---
 
 ### Why `firebase-config.js` is not in the repository
@@ -110,31 +104,17 @@ Install Nginx and put the project files in the web folder:
 
 ```bash
 sudo apt update && sudo apt install -y nginx
-# copy the project files to the server (from your own computer)
-scp -i <key> index.html main.js login.html login.js style.css firebase-config.js ubuntu@<WEB_IP>:/tmp/
-# on the server
-sudo cp /tmp/index.html /tmp/main.js /tmp/login.html /tmp/login.js /tmp/style.css /tmp/firebase-config.js /var/www/html/
-sudo chmod 644 /var/www/html/*
+#  cloning the repo in each of the web servers. So I can easy pull any cahnges
+git clone https://github.com/Daniella189-hub/UI_webinfra.git
+# moving the folder UI_webinfra in /var/www/html/* so it can server anything in this server
+<img width="560" height="72" alt="image" src="https://github.com/user-attachments/assets/81015c15-7e12-4f09-b9a3-7a7b430ecd84" />
+
 ```
 
 Nginx site (`/etc/nginx/sites-available/default`). The `X-Served-By` header shows which server answered, and it is set to `7338-web-02` on the second server:
 
-```nginx
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    server_name _;
-    root /var/www/html/UI_webinfra;
-    index index.html;
+<img width="532" height="51" alt="image" src="https://github.com/user-attachments/assets/3949930d-2ef1-4188-a3b4-e21cf1f225b0" />
 
-    include snippets/labelens-speed.conf;
-    add_header X-Served-By 7338-web-01 always;
-
-    location / {
-        try_files $uri $uri/ =404;
-    }
-}
-```
 
 Speed settings (`/etc/nginx/snippets/labelens-speed.conf`), described under Optimizations below:
 
