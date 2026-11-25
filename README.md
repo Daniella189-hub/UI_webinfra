@@ -24,16 +24,13 @@ Medicine labels are long and printed in tiny text Many people never read them, s
 - **Error handling:** friendly messages for no results, rate limits, API downtime and no internet
 - **Responsive** dark interface
 
-## Pages
+## Technologies used
 
-| Page | What it does |
-|---|---|
-| Home / Search (`index.html`) | Hero banner and the medicine search |
-| About | Explains the app, the data sources and the FAQ |
-| Contact | Hospitals in Rwanda from OpenStreetMap, with a filter |
-| Login (`login.html`) | Create an account, log in or reset a password |
-
-The Search, About and Contact views are inside one page. The links switch the view and update the address (`#search`, `#about`, `#contact`).
+- HTML, CSS, JavaScript
+- [Node.js/Express, Python/Flask, Django, etc.]
+- [Database, if used]
+- [Nginx, Apache, Docker, etc.]
+- [Testing tools, if used]
 
 ## Project structure
 
@@ -49,7 +46,10 @@ UI_webinfra/
 ├── .gitignore
 └── README.md
 ```
-
+## Cloning the repository
+```bash
+git clone https://github.com/Daniella189-hub/UI_webinfra.git
+```
 ---
 
 ## APIs and services used
@@ -68,6 +68,13 @@ UI_webinfra/
 - Login: **Firebase Authentication**, Google
 - Web server: **Nginx**. Load balancer: **HAProxy**. Certificates: **Let's Encrypt** (Certbot)
 
+### Install dependencies
+
+For a Node.js project:
+
+```bash
+npm install
+```
 ---
 
 ### Why `firebase-config.js` is not in the repository
@@ -153,19 +160,7 @@ sudo service nginx restart
 
 ### 2.Load balancer  (Lb01)
 A let's  Encrypt certificte was issued for `www.nishimwe.tech`, and the domain's DNS **A record** points to Lb01. HAproxy needs the certificate and key combined in one file (`/etc/haproxy/certs/www.nishimwe.tech.pem).
-frontend http_front
-    bind *:80
-    http-request redirect scheme https code 301 unless { ssl_fc }
-
-frontend https_front
-    bind *:443 ssl crt /etc/haproxy/certs/www.nishimwe.tech.pem
-    http-request set-header X-Forwarded-Proto https
-    default_backend web_servers
-
-backend web_servers
-    balance roundrobin
-    server web-01 35.178.184.225:80 check
-    server web-02 35.176.158.204:80 check
+<img width="934" height="403" alt="image" src="https://github.com/user-attachments/assets/ef95a96d-7bc9-494b-bc3f-2d32a6cf68d9" />
 
 
 ```bash
