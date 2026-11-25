@@ -1,6 +1,6 @@
 function el(tag, className, text) {
     const node = document.createElement(tag);
-    if(classNmae) node.className = className;
+    if(className) node.className = className;
     if(text !== undefined) node.textContent = text;
     return node;
 }
@@ -44,7 +44,7 @@ window.addEventListener("hashchange", showPage);
 
 const API_URL = "https://api.fda.gov/drug/label.json";
 const API_KEY = window.LABELENS_API_KEY || "";
-const preview_length = 350;
+const PREVIEW_LENGTH = 350;
 const SECTIONS={
     warnings: "Warnings",
     adverse_reactions: "Side effects",
@@ -93,19 +93,20 @@ function normalize(record){
 async function searchDrugs(term){
     setStatus("Searching...");
     resultsEl.replaceChildren();
+    apiNote.replaceChildren();
     controls.hidden = true;
     
     const safe = encodeURIComponent(term);
     const query = `openfda.generic_name:%22${safe}%22+openfda.brand_name:%22${safe}%22`;
     const keyPart = API_KEY ? `&api_key=${encodeURIComponent(API_KEY)}` : "";
-    const url = `${API_URL}?search=${query}&limit=25`;
+    const url = `${API_URL}?search=${query}&limit=25${keyPart}`;
     const publicUrl = `${API_URL}?search=${query}&limit=25`;
 
     try {
         const response = await fetch(url);
         if (response.status === 404){
             drugs = [];
-            setStatus(`No labels found for ${term}". Try the generic name, such as ibuprofen.`);
+            setStatus(`No labels found for "${term}". Try the generic name, such as ibuprofen.`);
             return;
         }
         if (response.status === 429) throw new Error("rate-limit");
@@ -113,6 +114,9 @@ async function searchDrugs(term){
         if(!response.ok) throw new Error("http-" + response.status);
 
         const data = await response.json();
+        if(!Array.isArray(data.results)) {
+            throw new Error("invalid- repsonse");
+        }
         if(!data.results || data.results.length === 0 ){
             drugs = [];
             setStatus(`No labels found for "${term}".`);
@@ -124,6 +128,7 @@ async function searchDrugs(term){
         render()
         showApiNote(data, publicUrl);
     } catch (error){
+        console.error("Medidicine search failed:", error);
         drugs = [];
         if(error.message === "rate-limit"){
             setStatus("Too many searches in a short time. Wait a minute, then search again.", true);
@@ -135,15 +140,18 @@ async function searchDrugs(term){
             setStatus(`openFDA service returned an error (code ${error.message.slice(5)}). Try again in a moment.`, true);
 
         }else if (error instanceof TypeError){
-            setStatus("Coud not reach the open FDA service. check your internet connection and try again.", true);
+            setStatus("Coud not complete the search or display its results. Please try again.", true);
+        } else if (error.message === "invalid-response") {
+            setStatus("The medicine service returned an unexpected response. Please try again", true);
         } else {
-            setStatus("The openFDA service returned an error. try again in a moment.", true);
+            setStatus("Something went wrong while loading the labels. try again in a moment.", true);
         }
     }
 
 }
 
 function showApiNote(data, publicUrl) {
+    apiNote.replaceChildren();
     const total = data.meta && data.meta.results && data.meta.results.total;
     const shown = data.results.length;
     const text = total && total > shown
@@ -268,7 +276,7 @@ function normalizeHospital(item) {
 
 const overpass_attempts = [
     { url: "https://overpass-api.de/api/interpreter", method: "GET"},
-    { url: "https://overpass-api.de/api/api/interpreter", method:"POST"},
+    { url: "https://overpass-api.de/api/interpreter", method:"POST"},
     { url: "https://overpass.private.coffee/api/interpreter", method:"POST"},
     { url: "https://overpass.kumi.systems/api/interpreter", method:"POST"},
     { url: "https://maps.mail.ru/osm/tools/overpass/api/interpreter", method:"POST"}
@@ -289,6 +297,9 @@ async function requestOverpass(attempt) {
                 body: "data=" + encodeURIComponent(hospital_query),
                 signal: controller.signal,
             });
+        }
+        if(response.status === 429 || response.status === 503) {
+            throw new Error("busy");
         }
         if (!response.ok) throw new Error ("http-" + response.status);
         const data = await response.json();
@@ -316,9 +327,13 @@ async function loadHospitals(){
     try {
         const saved = sessionStorage.getItem("labelens-hospitals");
         if (saved) {
-            hospitals = JSON.parse(saved);
-            renderHospitals();
-            return;
+            const cached  = JSON.parse(saved);
+            if (Array.isArray(cached)){
+                hospitals = cached;
+                renderHospitals();
+                return;
+            }
+            sessionStorage.removeItem("labelens-hospitals");
         }
     } catch(error) {
 
