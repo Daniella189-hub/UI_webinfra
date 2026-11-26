@@ -4,7 +4,7 @@ Labelens trun slog, technical medicine into short, searchablesections. Type a me
 
 - **Live site:** https://www.nishimwe.tech/
 - **Repository:** https://github.com/Daniella189-hub/UI_webinfra
-- **Demo video:** 
+- **Demo video:** https://youtu.be/lCGQ0K46LdI
 
 > ** For infromation only.Labelens is not medical advice. ** Always ask a doctor or pharmacist before taking, stopping or combining medicines.
 
