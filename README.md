@@ -44,6 +44,8 @@ UI_webinfra/
 ├── firebase-config.example.js   Template for the Firebase settings
 ├── firebase-config.js           Real settings (NOT in the repo, see below)
 ├── .gitignore
+├── make_hospitals.py            Using the API for listing the hospitals
+├── hospitals.json               listing the hospitals
 └── README.md
 ```
 ## Cloning the repository
@@ -204,6 +206,7 @@ curl -m 5 -I http://35.176.158.204/
 | **Keys in a public repo** | Kept `firebase-config.js` out of git, committed a `firebase-config.example.js` template, and gave the real values in the submission comment |
 | **Locking myself out** while adding a firewall | Allowed SSH first, tested a second login before closing the first, and only then enabled the firewall |
 | Many **small typos** broke the JavaScript (misspelled method names, wrong ids) | Used the browser Console (F12) to read each error and fix it line by line |
+| one API was denying access written in a JS document. Listing the different hospitals available in Rwanda | written a code in python so it could create t a hospitals.json file that contaisn the different outcomes from the API so JSON would be  used in replacement |
 
 ## Limitations
 
