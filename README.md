@@ -48,10 +48,15 @@ UI_webinfra/
 ├── hospitals.json               listing the hospitals
 └── README.md
 ```
-## Cloning the repository
+## Run locally
+
 ```bash
 git clone https://github.com/Daniella189-hub/UI_webinfra.git
 ```
+```bash   (start a local server)
+python -m http.server 8000
+```
+- open http://localhost:8000 in your broswer       it will open the app immediately
 ---
 
 ## APIs and services used
@@ -218,6 +223,6 @@ curl -m 5 -I http://35.176.158.204/
 
 ## Author
 
-Marie-Daniella Nishiwe, African Leadership University. Built for the "Playing Around with APIs" assignment.
+Marie-Daniella Nishimwe, African Leadership University. Built for the "Playing Around with APIs" assignment.
 
 
