@@ -7,6 +7,8 @@ body{
 }
 .hero{
     padding: 30px;
+    top: 0;
+    z-index: 10;
     justify-content:center;
     background: linear-gradient(135deg, #667eea, #764ba2);
 }
@@ -144,7 +146,7 @@ html {scroll-behavior: smooth;}
     outline: 3px solid #fbbf24;
     outline-offset: 2px;
 }
-.read a [aria-current="page"] {
+.read a[aria-current="page"] {
     text-decoration: underline;
 }
 .ready {
@@ -188,7 +190,7 @@ input, select, button {
     flex:1;
     min-width: 200px;
 }
-button [ type="submit"] {
+button[ type="submit"] {
     background: #7c6cf0;
     border-color: #7c6cf0;
     color: #fff;
@@ -332,9 +334,9 @@ details p {
     font-size:1.6rem;
 
 }
-.login-card input [type="email"],
-.login-card input [type="password"],
-.login-card input [type ="text"] {width:100%;}
+.login-card input[type="email"],
+.login-card input[type="password"],
+.login-card input[type ="text"] {width:100%;}
 .login-card button[type="submit"] {
     width:100%;
     margin-top:8px;
@@ -384,3 +386,5 @@ button[type="submit"]:disabled { opacity: 0.6; cursor: not-allowed; }
 .site-header a:active { color: #fbbf24; }
 
 [hidden] { display: none !important; }
+
+.accoutn-panel {min-width:140px; padding: 8px; }

@@ -1,3 +1,6 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
 function el(tag, className, text) {
     const node = document.createElement(tag);
     if(className) node.className = className;
@@ -21,7 +24,7 @@ function showPage() {
   for (const page of PAGES) {
     document.getElementById(page).hidden = page !== name;
   }
-  document.getElementById("hero").hidden = name !== "search";
+  document.getElementById("hero").hidden = false;
   document.title = TITLES[name];
 
   for (const link of document.querySelectorAll("nav a[data-page]")) {
@@ -108,7 +111,7 @@ async function searchDrugs(term){
     apiNote.replaceChildren();
     controls.hidden = true;
     const searchTerm = NAME_ALIASES[term.toLowerCase()] || term;
-    const safe = encodeURIComponent(term);
+    const safe = encodeURIComponent(searchTerm);
     const query = `openfda.generic_name:%22${safe}%22+openfda.brand_name:%22${safe}%22`;
     const keyPart = API_KEY ? `&api_key=${encodeURIComponent(API_KEY)}` : "";
     const url = `${API_URL}?search=${query}&limit=25${keyPart}`;
@@ -143,9 +146,7 @@ async function searchDrugs(term){
     } catch (error){
     
         drugs = [];
-        console.error(error) {
-            setStatus("Sorry, we couldn't load the results right now. check internet Connection and try again", true);
-        }
+        console.error(error);
         if(error.message === "rate-limit"){
             setStatus("Too many searches in a short time. Wait a minute, then search again.", true);
 
@@ -343,6 +344,14 @@ async function fetchHospitalData() {
     }
 }
 
+function setHospitals(data) {
+  hospitals = data.elements
+    .map(normalizeHospital)
+    .filter((h) => h.name)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  renderHospitals();
+}
+
 async function loadHospitals(){
     try {
         const saved = sessionStorage.getItem("labelens-hospitals");
@@ -359,30 +368,46 @@ async function loadHospitals(){
 
     }
 
+    let haveSavedCopy =false;
+    try {
+        const response = await fetch("hospitals.json");
+        if (response.ok) {
+            const data = await response.json();
+            if (data && Array.isArray(data.elements)) {
+                setHospitals(data);
+                haveSavedCopy = hospitals.length > 0;
+            }
+        }
+    } catch (error) {
+
+    }
+
     try {
         const data = await fetchHospitalData();
-        hospitals = data.elements
-            .map(normalizeHospital)
-            .filter((h) => h.name)
-            .sort((a, b) => a.name.localeCompare(b.name));
+        if(!data || !Array.isArray(data.elements)) {
+            throw new Error("Invalid hospital response");
+        }
+        const hasNamedPlaces = data.elements.some (
+            (item) => item.tags && item.tags.name
+        );
+        if(!hasNamedPlaces && haveSavedCopy) {
+            return;
+        }
+
+        setHospitals(data);
         try {
             sessionStorage.setItem("labelens-hospitals", JSON.stringify(hospitals));
-        } catch (error){
-
-        }   
-        renderHospitals(); 
-    } catch (error) {
-        hospitalsRequested = false;
-        console.error(error);
-        if (error.message === "busy") {
-        hospitalStatus.textContent = "The hospital service is busy. Refresh the page in a minute.";
-        } else if (error instanceof TypeError) {
-        hospitalStatus.textContent = "Could not load hospitals. Check your internet connection.";
-        } else {
-        hospitalStatus.textContent = "The hospital service returned an error. Try again later.";
+        } catch (error) {
         }
-    }
-    }
+
+        }  catch (error) {
+            console.error(error);
+            if(!haveSavedCopy) {
+                hospitalsRequested = false;
+                hospitalStatus.textContent = "Sorry, we couldn't load the hospitlas right now. Please check internet connection and try again";
+            }
+        }
+    } 
 
     function renderHospitals() {
     const query = hospitalFilter.value.trim().toLowerCase();
@@ -449,5 +474,104 @@ async function loadHospitals(){
 
     hospitalFilter.addEventListener("input", renderHospitals);
     showPage();
+
+    const accountNav = document.querySelector("nav ul");
+    let accountItem = null;
+    function removeAccountItem() {
+        if(accountItem) {
+            accountItem.remove();
+            accountItem = null;
+
+        }
+    }
+
+    function showLoggedOut() {
+        removeAccountItem();
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = "login.html";
+        link.textContent = "Log in";
+        item.appendChild(link);
+        accountNav.prepend(item);
+        accountItem = item;
+    }
+
+    function showLoggedIn(user, auth) {
+        removeAccountItem();
+        const email = user.email  || "Signed in";
+
+        const item = document.createElement("li");
+        item.className = "account";
+
+        const badge = document.createElement("button");
+        badge.type = "button";
+        badge.className = "account-badge";
+        badge.textContent = email.charAt(0).toUpperCase();
+        badge.title = email;
+        badge.setAttribute("aria-label", "Account menu for" + email);
+        badge.setAttribute("aria-haspopup", "true");
+        badge.setAttribute("aria-expanded", "false");
+        
+        const panel = document.createElement("div");
+        panel.className = "account-panel";
+        panel.hidden = true;
+
+        const logoutButton = document.createElement("button");
+        logoutButton.type = "button";
+        logoutButton.className = "account-signout";
+        logoutButton.textContent = "Logout";
+        panel.append(logoutButton);
+
+        function setOpen(open) {
+            panel.hidden = !open;
+            badge.setAttribute("aria-expanded", String(open));
+        }
+        badge.addEventListener("click", (event) => {
+            event.stopPropagation();
+            setOpen(panel.hidden);
+        });
+        document.addEventListener("click", (event) => {
+            if(!item.contains(event.target)) setOpen(false);
+        })
+        document.addEventListener("keydown", (event) => {
+            if(event.key === "Escape") setOpen(false);
+        });
+
+        logoutButton.addEventListener("click", async () => {
+            logoutButton.disabled = true;
+            logoutButton.textContent = "Logging out...";
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error(error);
+            }
+
+            window.location.hash = "#search";
+            window.scrollTo(0, 0);
+        });
+
+        item.append(badge, panel);
+        document.querySelector("nav ul").prepend(item);
+        accountItem = item;
+    }
+
+    async function startAccountMenu() {
+        try{
+            const {firebaseConfig} = await import("./firebase-config.js");
+            if ( !firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("PASTE")) return;
+            const auth = getAuth(initializeApp(firebaseConfig));
+            onAuthStateChanged(auth, (user) => {
+                if (user) showLoggedIn(user, auth);
+                else showLoggedOut();
+            });
+        } catch(error) {
+            console.error(error);
+        }
+    }
+
+    startAccountMenu();
+
+
+
      
 

@@ -135,13 +135,14 @@ async function setup(){
         if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("PASTE")) {
             throw new Error("not-configured");
         }
-        auth =getAuth(initializeApp(firebaseConfig));
+        auth = getAuth(initializeApp(firebaseConfig));
         onAuthStateChanged(auth, (user) => {
             if (user) goToApp();
 
         });
 
     } catch (error) {
+        console.error(error);
         showError ("Login is not set up yet. Add your firebase settings to firebase-config.js");
         submitBtn.disabled =true;
     }
